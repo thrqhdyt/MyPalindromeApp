@@ -14,6 +14,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import dev.thorcode.mypalindromeapplication.adapter.LoadingStateAdapter
 import dev.thorcode.mypalindromeapplication.adapter.UserListAdapter
 import dev.thorcode.mypalindromeapplication.databinding.FragmentListUserNameBinding
@@ -28,6 +29,7 @@ class ListUserNameFragment : Fragment() {
         ViewModelFactory(requireContext())
     }
     private lateinit var savedStateHandle: SavedStateHandle
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
 
     override fun onCreateView(
@@ -52,6 +54,12 @@ class ListUserNameFragment : Fragment() {
         val itemDecoration = DividerItemDecoration(requireContext(), layoutManager.orientation)
         binding.rvUsers.addItemDecoration(itemDecoration)
 
+        swipeRefreshLayout = binding.swipeRefreshLayout
+
+        swipeRefreshLayout.setOnRefreshListener {
+            getData()
+        }
+
         getData()
     }
 
@@ -60,12 +68,12 @@ class ListUserNameFragment : Fragment() {
         lifecycleScope.launch {
             adapter.loadStateFlow.collect{
                 val loadState = it.refresh
-                binding.progressBar.isVisible =
-                    (loadState is LoadState.Loading && adapter.itemCount == 0) || loadState is LoadState.Error
+                binding.progressBar.isVisible = loadState is LoadState.Error
                 if(loadState is LoadState.Error){
                     Toast.makeText(requireContext(), "No Internet Connection", Toast.LENGTH_SHORT)
                         .show()
                 }
+                swipeRefreshLayout.isRefreshing = loadState is LoadState.Loading
             }
         }
         binding.rvUsers.adapter = adapter.withLoadStateFooter(
